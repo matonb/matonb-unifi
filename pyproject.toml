@@ -1,0 +1,171 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0", "wheel"]
+
+[project]
+authors = [{ name = "Brett Maton" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "httpx>=0.27.0",
+    # Backports typing.Self to Python 3.10 (type-checking only).
+    'typing-extensions>=4.0; python_version < "3.11"',
+]
+description = "Typed Python client for the UniFi Network API"
+keywords = ["unifi", "ubiquiti", "network", "api"]
+license = "MIT"
+name = "matonb-unifi"
+readme = "README.md"
+requires-python = ">=3.10"
+version = "0.0.0"
+
+[project.urls]
+Homepage = "https://github.com/matonb/matonb-unifi"
+Issues = "https://github.com/matonb/matonb-unifi/issues"
+Repository = "https://github.com/matonb/matonb-unifi.git"
+
+[project.optional-dependencies]
+dev = ["ruff>=0.15.20"]
+typecheck = ["mypy>=1.8", "typing-extensions>=4.0"]
+release = ["build>=1.2.0", "python-semantic-release>=10.1.0"]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "respx>=0.21.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.package-data]
+matonb_unifi = ["py.typed"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=src/matonb_unifi --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["matonb_unifi"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+fail_under = 80
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+ignore = [
+    # Formatter conflict — Ruff recommends disabling COM812 with the formatter
+    "COM812",  # Trailing comma missing
+
+    # JSON API responses are dynamically typed; Any is justified in the HTTP layer
+    "ANN401",  # Dynamically typed expressions (Any)
+]
+select = [
+    "A",    # flake8-builtins
+    "ANN",  # flake8-annotations
+    "ARG",  # flake8-unused-arguments
+    "B",    # flake8-bugbear
+    "BLE",  # flake8-blind-except
+    "C4",   # flake8-comprehensions
+    "C90",  # mccabe complexity
+    "COM",  # flake8-commas
+    "DTZ",  # flake8-datetimez
+    "E",    # pycodestyle errors
+    "EM",   # flake8-errmsg
+    "F",    # pyflakes
+    "FBT",  # flake8-boolean-trap
+    "FLY",  # flynt
+    "FURB", # refurb
+    "G",    # flake8-logging-format
+    "I",    # isort
+    "ICN",  # flake8-import-conventions
+    "INP",  # flake8-no-pep420
+    "INT",  # flake8-gettext
+    "ISC",  # flake8-implicit-str-concat
+    "LOG",  # flake8-logging
+    "N",    # pep8-naming
+    "PERF", # perflint
+    "PGH",  # pygrep-hooks
+    "PIE",  # flake8-pie
+    "PL",   # pylint
+    "PT",   # flake8-pytest-style
+    "PTH",  # flake8-use-pathlib
+    "PYI",  # flake8-pyi
+    "Q",    # flake8-quotes
+    "RET",  # flake8-return
+    "RSE",  # flake8-raise
+    "RUF",  # ruff-specific rules
+    "S",    # flake8-bandit (security)
+    "SIM",  # flake8-simplify
+    "SLF",  # flake8-self
+    "SLOT", # flake8-slots
+    "T20",  # flake8-print
+    "TCH",  # flake8-type-checking
+    "TID",  # flake8-tidy-imports
+    "TRY",  # tryceratops
+    "UP",   # pyupgrade
+    "W",    # pycodestyle warnings
+    "YTT",  # flake8-2020
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "ANN",     # Type annotations not required in tests
+    "S101",    # assert is expected in tests
+    "PLR2004", # Magic values are fine in tests
+    "FBT001",  # Boolean positional arg fine in test calls
+    "SLF001",  # Private member access intentional in unit tests
+    "ARG005",  # Unused lambda args acceptable in mock helpers
+]
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 8
+max-branches = 15
+max-returns = 8
+max-statements = 60
+
+[tool.semantic_release]
+allow_zero_version = true
+build_command = "python -m build"
+changelog_file = "CHANGELOG.md"
+commit_author = "github-actions <github-actions@users.noreply.github.com>"
+commit_parser = "conventional"
+major_on_zero = false
+tag_format = "v{version}"
+upload_to_vcs_release = true
+version_toml = ["pyproject.toml:project.version"]
+version_variables = ["src/matonb_unifi/__init__.py:__version__"]
+
+[tool.semantic_release.remote]
+type = "github"
+token = { env = "GH_TOKEN" }
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
