@@ -25,7 +25,7 @@ license = "MIT"
 name = "matonb-unifi"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.0.0"
+version = "0.1.0"
 
 [project.urls]
 Homepage = "https://github.com/matonb/matonb-unifi"

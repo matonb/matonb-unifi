@@ -9,7 +9,7 @@ from matonb_unifi.exceptions import (
 )
 from matonb_unifi.models import Port, PortOverride, UnifiDevice, UnifiSta
 
-__version__ = "0.0.0"
+__version__ = "0.1.0"
 
 __all__ = [
     "Port",
