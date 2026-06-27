@@ -52,7 +52,7 @@ jobs:
 
   release:
     needs: [lint, typecheck, test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -71,24 +71,31 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
 
+      # On a push, semantic-release determines the next version, commits the
+      # bump, tags it, creates the GitHub release, and populates dist/.
+      # On a workflow_dispatch retry, the tag already exists so semantic-release
+      # is a no-op; we build directly from the current tag instead.
       - name: Semantic release (version + tag + GitHub release)
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
         run: uv run --frozen --extra release semantic-release version
 
-      # build_command populates dist/ only when a new version is cut, so a
-      # non-empty dist/ is the signal that there is something to publish.
-      - name: Check whether a release was created
-        id: check_release
+      - name: Build (publish retry)
+        if: github.event_name == 'workflow_dispatch'
+        run: uv run --extra release python -m build
+
+      - name: Check for distribution artifacts
+        id: check_dist
         run: |
           if [ -d dist ] && [ -n "$(ls -A dist)" ]; then
-            echo "release_created=true" >> "$GITHUB_OUTPUT"
+            echo "has_dist=true" >> "$GITHUB_OUTPUT"
             ls -la dist/
           else
-            echo "release_created=false" >> "$GITHUB_OUTPUT"
-            echo "No new release — nothing to publish."
+            echo "has_dist=false" >> "$GITHUB_OUTPUT"
+            echo "No artifacts — nothing to publish."
           fi
 
       - name: Publish to PyPI
-        if: steps.check_release.outputs.release_created == 'true'
+        if: steps.check_dist.outputs.has_dist == 'true'
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
