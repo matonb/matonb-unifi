@@ -14,6 +14,7 @@ from matonb_unifi import (
 from matonb_unifi.models import PortOverride, UnifiDevice
 
 DEVICE_URL = "https://unifi.test/proxy/network/api/s/default/stat/device"
+STA_URL = "https://unifi.test/proxy/network/api/s/default/stat/sta"
 REST_URL = "https://unifi.test/proxy/network/api/s/default/rest/device/sw1"
 
 SWITCH = {
@@ -43,6 +44,8 @@ def test_get_clients_returns_stas(client):
                         "last_ip": "10.0.0.1",
                         "name": "my-pc",
                         "hostname": "",
+                        "sw_mac": "de:ad:be:ef:00:02",
+                        "sw_port": 4,
                     },
                     {
                         "mac": "11:22:33:44:55:66",
@@ -60,8 +63,13 @@ def test_get_clients_returns_stas(client):
     assert stas[0].mac == "aa:bb:cc:dd:ee:ff"
     assert stas[0].ip == "10.0.0.1"
     assert stas[0].name == "my-pc"
+    assert stas[0].sw_mac == "de:ad:be:ef:00:02"
+    assert stas[0].sw_port == 4
     assert stas[1].ip == "10.0.0.2"
     assert stas[1].hostname == "printer"
+    # Wireless clients carry no switch/port info.
+    assert stas[1].sw_mac is None
+    assert stas[1].sw_port is None
 
 
 @respx.mock
@@ -218,6 +226,75 @@ def test_find_device_by_name_and_mac(client):
     # MAC lookup is case-insensitive and accepts dashes.
     assert client.find_device("DE-AD-BE-EF-00-02").id == "sw1"
     assert client.find_device("nope") is None
+
+
+@respx.mock
+def test_find_client_port_by_mac_hostname_and_name(client):
+    respx.get(STA_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [
+                    {
+                        "mac": "aa:bb:cc:dd:ee:ff",
+                        "hostname": "pi015",
+                        "name": "cluster-node",
+                        "sw_mac": "de:ad:be:ef:00:02",
+                        "sw_port": 4,
+                    }
+                ]
+            },
+        )
+    )
+    respx.get(DEVICE_URL).mock(
+        return_value=httpx.Response(200, json={"data": [SWITCH]})
+    )
+
+    result = client.find_client_port("AA-BB-CC-DD-EE-FF")
+    assert result is not None
+    switch, port_idx = result
+    assert switch.id == "sw1"
+    assert port_idx == 4
+
+    assert client.find_client_port("pi015") == (switch, 4)
+    assert client.find_client_port("cluster-node") == (switch, 4)
+    assert client.find_client_port("nope") is None
+
+
+@respx.mock
+def test_find_client_port_wireless_client_returns_none(client):
+    respx.get(STA_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={"data": [{"mac": "aa:bb:cc:dd:ee:ff", "hostname": "phone"}]},
+        )
+    )
+
+    assert client.find_client_port("phone") is None
+
+
+@respx.mock
+def test_find_client_port_unknown_switch_returns_none(client):
+    respx.get(STA_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [
+                    {
+                        "mac": "aa:bb:cc:dd:ee:ff",
+                        "hostname": "pi015",
+                        "sw_mac": "00:00:00:00:00:99",
+                        "sw_port": 4,
+                    }
+                ]
+            },
+        )
+    )
+    respx.get(DEVICE_URL).mock(
+        return_value=httpx.Response(200, json={"data": [SWITCH]})
+    )
+
+    assert client.find_client_port("pi015") is None
 
 
 @respx.mock

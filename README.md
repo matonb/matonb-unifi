@@ -18,6 +18,7 @@ standalone controllers (username / password).
 - Context-manager lifecycle that logs in and out for you
 - Read client stations and infrastructure devices
 - Look up a device by name or MAC with `find_device()`
+- Look up the switch and port a client is wired into with `find_client_port()`
 - Set per-port PoE mode, including a built-in `cycle_port_poe()` power-cycle helper
 - Typed exception hierarchy (`UnifiError` and friends) — no need to catch `httpx`
 
@@ -112,6 +113,8 @@ class UnifiSta:
     ip: str | None = None   # last_ip, falling back to fixed_ip
     hostname: str = ""
     name: str = ""
+    sw_mac: str | None = None    # uplink switch MAC (wired clients only)
+    sw_port: int | None = None   # uplink switch port_idx (wired clients only)
 ```
 
 ### `get_devices() -> list[UnifiDevice]`
@@ -163,6 +166,20 @@ may use `:` or `-` separators). Returns `None` if nothing matches.
 ```python
 switch = unifi.find_device("office-switch")      # by name
 switch = unifi.find_device("de-ad-be-ef-00-02")  # by MAC
+```
+
+### `find_client_port(identifier) -> tuple[UnifiDevice, int] | None`
+
+Look up the switch and port a client is **wired** into, by **MAC, hostname,
+or name** (case-insensitive; the MAC may use `:` or `-` separators). Returns
+`None` if no client matches, the client is on Wi-Fi (no switch/port data), or
+its switch isn't present in `get_devices()`.
+
+```python
+result = unifi.find_client_port("dc:a6:32:11:22:33")
+if result:
+    switch, port_idx = result
+    unifi.set_port_poe(switch, {port_idx: "off"})
 ```
 
 ### `set_port_poe(device, port_modes, current_overrides=None) -> None`

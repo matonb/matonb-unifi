@@ -13,6 +13,8 @@ class UnifiSta:
     ip: str | None = None
     hostname: str = ""
     name: str = ""
+    sw_mac: str | None = None
+    sw_port: int | None = None
 
 
 @dataclass
