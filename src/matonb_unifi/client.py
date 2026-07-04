@@ -182,13 +182,18 @@ class UnifiClient:
         """Find the switch and port a client is wired into.
 
         ``identifier`` is matched against a client's MAC, hostname, or name
-        (case-insensitive; the MAC may use ``:`` or ``-`` separators).
+        (case-insensitive; the MAC may use ``:`` or ``-`` separators). The
+        comparison also tries both sides with a domain suffix stripped
+        (``"pi005"`` matches a client named ``"pi005.example.com"`` and vice
+        versa), since either the identifier or the client's stored value may
+        be a bare short name.
         Returns ``(switch, port_idx)``, or ``None`` if no client matches, the
         client isn't wired (e.g. it's on Wi-Fi), or its switch isn't present
         in :meth:`get_devices`.
         """
         name = identifier.strip().lower()
         mac = name.replace("-", ":")
+        short_name = name.split(".", 1)[0]
         match = next(
             (
                 sta
@@ -196,6 +201,8 @@ class UnifiClient:
                 if sta.mac.lower() == mac
                 or sta.hostname.lower() == name
                 or sta.name.lower() == name
+                or sta.hostname.lower().split(".", 1)[0] == short_name
+                or sta.name.lower().split(".", 1)[0] == short_name
             ),
             None,
         )
