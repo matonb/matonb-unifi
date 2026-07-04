@@ -262,6 +262,39 @@ def test_find_client_port_by_mac_hostname_and_name(client):
 
 
 @respx.mock
+def test_find_client_port_matches_across_domain_suffix(client):
+    respx.get(STA_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [
+                    {
+                        "mac": "aa:bb:cc:dd:ee:ff",
+                        "hostname": "pi000",
+                        "name": "pi005.bm-home.lan",
+                        "sw_mac": "de:ad:be:ef:00:02",
+                        "sw_port": 4,
+                    }
+                ]
+            },
+        )
+    )
+    respx.get(DEVICE_URL).mock(
+        return_value=httpx.Response(200, json={"data": [SWITCH]})
+    )
+
+    # Bare identifier matches a client whose stored name carries a domain.
+    result = client.find_client_port("pi005")
+    assert result is not None
+    assert result[1] == 4
+
+    # An FQDN identifier also matches a client with a bare stored value
+    # (hostname here is the unrelated stale "pi000", so this only succeeds
+    # via the name field's domain-stripped comparison).
+    assert client.find_client_port("pi005.other.example") == result
+
+
+@respx.mock
 def test_find_client_port_wireless_client_returns_none(client):
     respx.get(STA_URL).mock(
         return_value=httpx.Response(

@@ -171,9 +171,11 @@ switch = unifi.find_device("de-ad-be-ef-00-02")  # by MAC
 ### `find_client_port(identifier) -> tuple[UnifiDevice, int] | None`
 
 Look up the switch and port a client is **wired** into, by **MAC, hostname,
-or name** (case-insensitive; the MAC may use `:` or `-` separators). Returns
-`None` if no client matches, the client is on Wi-Fi (no switch/port data), or
-its switch isn't present in `get_devices()`.
+or name** (case-insensitive; the MAC may use `:` or `-` separators). The
+comparison also tries both sides with a domain suffix stripped, so `"pi005"`
+matches a client named `"pi005.example.com"` and vice versa. Returns `None`
+if no client matches, the client is on Wi-Fi (no switch/port data), or its
+switch isn't present in `get_devices()`.
 
 ```python
 result = unifi.find_client_port("dc:a6:32:11:22:33")
