@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v0.2.1 (2026-07-04)
+
+### Bug Fixes
+
+- Match find_client_port() identifiers across domain suffixes
+  ([`f998f3d`](https://github.com/matonb/matonb-unifi/commit/f998f3da39b79e3fc610441832d1972531a66567))
+
+### Chores
+
+- Bump python-semantic-release from 10.5.3 to 10.6.0
+  ([`e71098b`](https://github.com/matonb/matonb-unifi/commit/e71098bf8b859c102d4a3d821d03e230ed2d45bf))
+
+- Bump typing-extensions from 4.15.0 to 4.16.0
+  ([`1ce0e5b`](https://github.com/matonb/matonb-unifi/commit/1ce0e5bb26336939c4322f99b728dfc7a8165f07))
+
+
 ## v0.2.0 (2026-07-04)
 
 ### Chores
