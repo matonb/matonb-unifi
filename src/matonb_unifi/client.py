@@ -124,6 +124,8 @@ class UnifiClient:
                 ip=item.get("last_ip") or item.get("fixed_ip") or None,
                 hostname=item.get("hostname", ""),
                 name=item.get("name", ""),
+                sw_mac=item.get("sw_mac") or None,
+                sw_port=item.get("sw_port"),
             )
             for item in self._get("stat/sta")
         ]
@@ -175,6 +177,38 @@ class UnifiClient:
             if device.mac.lower() == mac or device.name.lower() == name:
                 return device
         return None
+
+    def find_client_port(self, identifier: str) -> tuple[UnifiDevice, int] | None:
+        """Find the switch and port a client is wired into.
+
+        ``identifier`` is matched against a client's MAC, hostname, or name
+        (case-insensitive; the MAC may use ``:`` or ``-`` separators).
+        Returns ``(switch, port_idx)``, or ``None`` if no client matches, the
+        client isn't wired (e.g. it's on Wi-Fi), or its switch isn't present
+        in :meth:`get_devices`.
+        """
+        name = identifier.strip().lower()
+        mac = name.replace("-", ":")
+        match = next(
+            (
+                sta
+                for sta in self.get_clients()
+                if sta.mac.lower() == mac
+                or sta.hostname.lower() == name
+                or sta.name.lower() == name
+            ),
+            None,
+        )
+        if match is None or match.sw_mac is None or match.sw_port is None:
+            return None
+        sw_mac = match.sw_mac.lower()
+        switch = next(
+            (device for device in self.get_devices() if device.mac.lower() == sw_mac),
+            None,
+        )
+        if switch is None:
+            return None
+        return switch, match.sw_port
 
     def set_port_poe(
         self,
